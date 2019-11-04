@@ -6,7 +6,7 @@ http://streaming-live-app.rtp.pt/liverepeater/smil:rtp2.smil/playlist.m3u8
 #EXTINF:-1 tvg-id="SIC" tvg-logo="https://ptiptv.tk/logo?i=SIC" group-title="Entertainment",SIC
 http://live.impresa.pt/live/sic/sic.m3u8
 #EXTINF:-1 tvg-id="TVI" tvg-logo="https://ptiptv.tk/logo?i=TVI" group-title="Entertainment",TVI
-http://video-auth7.iol.pt/live_tvi/live_tvi/playlist.m3u8
+https://video-auth4.iol.pt/live_tvi/live_tvi/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvNC8yMDE5IDU6MjE6MzIgUE0maGFzaF92YWx1ZT1qTXA5TjRrc2psRElFbjRaUHM0TTd3PT0mdmFsaWRtaW51dGVzPTE0NDAmaWQ9ZWViNWVmYjItZTk5NC00NmEwLWI4ZjYtNWRlZjk0ZjM1YzI1
 #EXTINF:-1 tvg-id="RTP3" tvg-logo="https://ptiptv.tk/logo?i=RTP3" group-title="News",RTP 3
 http://streaming-live-app.rtp.pt/liverepeater/smil:rtpn.smil/playlist.m3u8
 #EXTINF:-1 tvg-id="SICN" tvg-logo="https://ptiptv.tk/logo?i=SICN" group-title="News",SIC Notícias
