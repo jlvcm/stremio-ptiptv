@@ -1,27 +1,26 @@
+// Docs: https://github.com/Stremio/stremio-addon-sdk/blob/master/docs/api/responses/manifest.md
+// M3u from https://github.com/iptv-org/iptv
+
 const { addonBuilder } = require("stremio-addon-sdk");
 var request = require('request');
-const fs = require('fs');
-/*
-        const meta = {
-            id: 'tt1254207',
-            name: 'Big Buck Bunny',
-            year: 2008,
-            poster: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/uVEFQvFMMsg4e6yb03xOfVsDz4o.jpg',
-            posterShape: 'regular',
-            banner: 'https://image.tmdb.org/t/p/original/aHLST0g8sOE1ixCxRDgM35SKwwp.jpg',
-            type: 'movie'
-		}
-	*/
-// Docs: https://github.com/Stremio/stremio-addon-sdk/blob/master/docs/api/responses/manifest.md
+
+countries = {'Afghanistan':'af','Albania':'al','Algeria':'dz','Andorra':'ad','Angola':'ao','Argentina':'ar','Armenia':'am','Aruba':'aw','Australia':'au','Austria':'at','Azerbaijan':'az','Bahamas':'bs','Bahrain':'bh','Bangladesh':'bd','Barbados':'bb','Belarus':'by','Belgium':'be','Bolivia':'bo','Bosnia and Herzegovina':'ba','Brazil':'br','Brunei':'bn','Bulgaria':'bg','Burkina Faso':'bf','Cambodia':'kh','Cameroon':'cm','Canada':'ca','Cape Verde':'cv','Chile':'cl','China':'cn','Colombia':'co','Costa Rica':'cr','Croatia':'hr','Curaçao':'cw','Cyprus':'cy','Czech Republic':'cz','Democratic Republic of the Congo':'cd','Denmark':'dk','Dominican Republic':'do','Ecuador':'ec','Egypt':'eg','El Salvador':'sv','Equatorial Guinea':'gq','Estonia':'ee','Ethiopia':'et','Faroe Islands':'fo','Finland':'fi','Fiji':'fj','France':'fr','Gambia':'gm','Georgia':'ge','Germany':'de','Ghana':'gh','Greece':'gr','Grenada':'gd','Guadeloupe':'gp','Guatemala':'gt','Guyana':'gy','Haiti':'ht','Honduras':'hn','Hong Kong':'hk','Hungary':'hu','Iceland':'is','India':'in','Indonesia':'id','International':'int','Iran':'ir','Iraq':'iq','Ireland':'ie','Israel':'il','Italy':'it','Ivory Coast':'ci','Jamaica':'jm','Japan':'jp','Jordan':'jo','Kazakhstan':'kz','Kenya':'ke','Kosovo':'xk','Kuwait':'kw','Kyrgyzstan':'kg','Laos':'la','Latvia':'lv','Lebanon':'lb','Libya':'ly','Liechtenstein':'li','Lithuania':'lt','Luxembourg':'lu','Macau':'mo','Malaysia':'my','Maldives':'mv','Malta':'mt','Mexico':'mx','Moldova':'md','Mongolia':'mn','Montenegro':'me','Morocco':'ma','Mozambique':'mz','Myanmar':'mm','Nepal':'np','Netherlands':'nl','New Zealand':'nz','Nicaragua':'ni','Nigeria':'ng','North Korea':'kp','North Macedonia':'mk','Norway':'no','Oman':'om','Pakistan':'pk','Palestine':'ps','Panama':'pa','Paraguay':'py','Peru':'pe','Philippines':'ph','Poland':'pl','Portugal':'pt','Puerto Rico':'pr','Qatar':'qa','Republic of the Congo':'cg','Romania':'ro','Russia':'ru','Rwanda':'rw','Saint Kitts and Nevis':'kn','San Marino':'sm','Saudi Arabia':'sa','Senegal':'sn','Serbia':'rs','Sierra Leone':'sl','Singapore':'sg','Sint Maarten':'sx','Slovakia':'sk','Slovenia':'si','Somalia':'so','South Africa':'za','South Korea':'kr','Spain':'es','Sri Lanka':'lk','Sudan':'sd','Sweden':'se','Switzerland':'ch','Syria':'sy','Taiwan':'tw','Tanzania':'tz','Thailand':'th','Togo':'tg','Trinidad and Tobago':'tt','Tunisia':'tn','Turkey':'tr','Turkmenistan':'tm','Uganda':'ug','Ukraine':'ua','United Arab Emirates':'ae','United Kingdom':'uk','United States':'us','Uruguay':'uy','Venezuela':'ve','Vietnam':'vn','Virgin Islands of the United States':'vi','Western Sahara':'eh','Yemen':'ye','Zimbabwe':'zw'}
 const manifest = {
-	"id": "community.ptiptv",
-	"version": "0.0.1",
-	"catalogs": [{'type':'tv','id':'ptiptv','name':'ptiptv'}],
-	"resources": ["catalog", "meta", "stream"],
-	"types": ['tv'],
-	"name": "ptiptv",
-	"description": "ptiptv",
-//	"idPrefixes": ["pttv:"]
+	id: "community.iptvOrg",
+	version: "0.0.1",
+	description: "Collection of 8000+ publicly available IPTV channels from all over the world.",
+	catalogs: [{type:'tv',id:'iptvOrg',name:'iptvOrg',extra: [
+		{
+		  name: "genre",
+		  options: Object.keys(countries),
+		  isRequired: true
+		}
+	  ]}],
+	resources: ["catalog", "meta", "stream"],
+	types: ['tv'],
+	name: "iptvOrg",
+	description: "iptvOrg",
+	idPrefixes: ['iptvorg']
 }
 function match(r,s,i){
 	var m = s.match(r);
@@ -29,44 +28,45 @@ function match(r,s,i){
 }
 
 const builder = new addonBuilder(manifest)
-function getData(){
+function getData(country){
+	if(!country) country='United States';
 	return new Promise((resolve, reject) => {
-		fs.readFile('lista.m3u8', "utf8", (err, data) => {
-			var channels = data.replace('#EXTM3U url-tvg="https://ptiptv.tk/guia.xml"\n#', '').split('#');
-			var metas = [];
-			for (let i = 0; i < channels.length; i++) {
-				const item = channels[i];
-				var name = match(/,([^\n]+)/,item,1);
-				if(!name) continue;
-				var img = match(/tvg-logo="([^"]+)"/,item,1);
-				metas.push({
-					id:'pttv:'+i,
-					name:name,
-					poster:img,
-					posterShape: 'regular',
-					type:'tv',
-				})
+		request('https://iptv-org.github.io/iptv/countries/'+countries[country]+'.m3u', function (error, response, body) {
+			if(error){
+				reject(error);
+			}else if (!response || response.statusCode!=200 ){
+				reject(response.statusCode);
+			}else if (body){
+				var channels = body.split('#');
+				var metas = [];
+				var metaID = {};
+				for (let i = 1; i < channels.length; i++) {
+					const item = channels[i];
+					var name = match(/,([^\n]+)/,item,1).trim();
+					if(!name) continue;
+					var img = match(/tvg-logo="([^"]+)"/,item,1);
+					var stream = match(/\n(http[^\n]+)/,item,1).trim();
+					var id ='iptvorg:'+country+'::'+name;
+					if(metaID[id]==undefined){
+						metaID[id] = metas.length;
+						metas.push({
+							id:id,
+							name:name,
+							logo:img,
+							poster:img,
+							posterShape: 'regular',
+							type:'tv',
+							streams:[]
+						});
+						metas[metaID[id]] = metas[metaID[id]]
+					}
+					metas[metaID[id]].streams.push({
+						'url':stream,
+					});
+				}
+				resolve(metas);
 			}
-			resolve(metas);
-		});
-	});
-}
-
-function getOne(id){
-	return new Promise((resolve, reject) => {
-		fs.readFile('lista.m3u8', "utf8", (err, data) => {
-			var channels = data.replace('#EXTM3U url-tvg="https://ptiptv.tk/guia.xml"\n#', '').split('#');
-			const item = channels[id];
-			var name = match(/,([^\n]+)/,item,1);
-			var img = match(/tvg-logo="([^"]+)"/,item,1);
-			var group = match(/group-title="([^"]+)"/,item,1);
-			var stream = match(/\n(http[^\n]+)/,item,1).trim();
-			resolve({
-				'name':name,
-				'img':img,
-				'stream':stream,
-				'group':group
-			});
+		
 		});
 	});
 }
@@ -76,20 +76,28 @@ function getOne(id){
 builder.defineCatalogHandler(function(args, cb) {
 	// filter the dataset object and only take the requested type
 	return new Promise((resolve, reject) => {
-		getData().then(function(values) {
+		getData(args.extra.genre).then(function(values) {
 			resolve({'metas':values});
+		}).catch((e)=>{
+			reject(e);
 		});
 	});
 });
 
 // takes function(args, cb)
 builder.defineStreamHandler(function(args, cb) {
-	if (args.type === 'tv' && args.id.startsWith('pttv:')) {
+	if (args.type === 'tv' && args.id.startsWith('iptvorg:')) {
 		return new Promise((resolve, reject) => {
-			getOne(args.id.split(':')[1]).then(function(values) {
-				var data = values;
-				const stream = { url: data['stream'] }
-				resolve({ streams: [stream] })
+			genr = args.id.split(':',2)[1].split('::')[0];
+			getData(genr).then(function(values) {
+				for (let i = 0; i < values.length; i++) {
+					if(values[i].id == args.id){
+						return resolve({streams:values[i].streams});
+					}
+				}
+				resolve({ streams: [] });
+			}).catch((e)=>{
+				reject(e);
 			});
 		});
     } else {
@@ -97,27 +105,26 @@ builder.defineStreamHandler(function(args, cb) {
         return Promise.resolve({ streams: [] })
     }
 })
+
 builder.defineMetaHandler(function(args) {
-		if (args.type === 'tv' && args.id.startsWith('pttv:')) {
-			return new Promise((resolve, reject) => {
-				getOne(args.id.split(':')[1]).then(function(values) {
-					data = values;
-					resolve({ meta: {
-						id:args.id,
-						name:data['name'],
-						poster:data['img'],
-						logo:data['img'],
-						//background:data['img'],
-						posterShape: 'regular',
-						type:'tv'
-					} })
-					
-				});
+	if (args.type === 'tv' && args.id.startsWith('iptvorg:')) {
+		return new Promise((resolve, reject) => {
+			genr = args.id.split(':',2)[1].split('::')[0];
+			getData(genr).then(function(values) {
+				for (let i = 0; i < values.length; i++) {
+					if(values[i].id == args.id){
+						return resolve({meta:values[i]});
+					}
+				}
+				resolve({ streams: [] })
+			}).catch((e)=>{
+				reject(e);
 			});
-		} else {
-			// otherwise return no meta
-			return Promise.resolve({ meta: {} })
-		}
+		});
+    } else {
+        // otherwise return no streams
+        return Promise.resolve({ streams: [] })
+    }
 
 })
 module.exports = builder.getInterface()
