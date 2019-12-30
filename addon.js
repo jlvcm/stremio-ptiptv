@@ -8,7 +8,6 @@ countries = {'Afghanistan':'af','Albania':'al','Algeria':'dz','Andorra':'ad','An
 const manifest = {
 	id: "community.iptvOrg",
 	version: "0.0.1",
-	description: "Collection of 8000+ publicly available IPTV channels from all over the world.",
 	catalogs: [{type:'tv',id:'iptvOrg',name:'iptvOrg',extra: [
 		{
 		  name: "genre",
@@ -19,7 +18,7 @@ const manifest = {
 	resources: ["catalog", "meta", "stream"],
 	types: ['tv'],
 	name: "iptvOrg",
-	description: "iptvOrg",
+	description: "Collection of 8000+ publicly available IPTV channels from all over the world.",
 	idPrefixes: ['iptvorg']
 }
 function match(r,s,i){
