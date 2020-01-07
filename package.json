@@ -1,7 +1,10 @@
 {
 	"name": "stremio-addon-ptiptv",
-	"version": "0.0.1",
+	"version": "0.0.3",
 	"description": "Portuguese TV",
+	"engines": { 
+		"node": "12.x" 
+	},
 	"scripts": {
 		"start": "node server.js"
 	},
