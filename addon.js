@@ -15,8 +15,9 @@ const cache = {
 
 const manifest = {
 	id: "community.iptvOrg",
-	version: "0.0.2",
-	catalogs: [{type:'tv',id:'iptvOrg',name:'iptvOrg',extra: [
+	version: "0.0.3",
+	logo: "https://i.ibb.co/FgRqP6w/10a8e00f-0fce-447b-9e2d-b552f921ff66-200x200.png",
+	catalogs: [{type:'tv',id:'IPTVorg',name:'iptvOrg',extra: [
 		{
 		  name: "genre",
 		  options: Object.keys(countries),
@@ -25,7 +26,7 @@ const manifest = {
 	  ]}],
 	resources: ["catalog", "meta", "stream"],
 	types: ['tv'],
-	name: "iptvOrg",
+	name: "IPTVorg",
 	description: "Collection of 8000+ publicly available IPTV channels from all over the world.",
 	idPrefixes: ['iptvorg']
 }
