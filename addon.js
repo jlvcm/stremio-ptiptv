@@ -41,7 +41,7 @@ function getData(country){
 	if(!country) country='United States';
 	return new Promise((resolve, reject) => {
 		var url = 'https://iptv-org.github.io/iptv/countries/'+countries[country]+'.m3u';
-		if (countries[country]=='Unsorted'){
+		if (countries[country]=='unsorted'){
 			url = 'https://raw.githubusercontent.com/iptv-org/iptv/master/channels/unsorted.m3u';
 		}
 		request(url, function (error, response, body) {
