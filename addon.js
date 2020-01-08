@@ -136,6 +136,9 @@ builder.defineCatalogHandler(function(args, cb) {
 	// filter the dataset object and only take the requested type
 	return new Promise((resolve, reject) => {
 		if (args.id == 'iptvorg_search'){
+			if(!args.extra.search){
+				return resolve({});
+			}
 			const search = args.extra.search.toLowerCase().split(/[^a-zA-Z0-9]/);
 			getSearch().then(function(values){
 				var found = [];
