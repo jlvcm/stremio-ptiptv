@@ -14,6 +14,11 @@ const cache = {
 	staleError: 6 * 30 * oneDay // 6 months
 }
 
+search_cache = {
+	timestamp: 0,
+	data: {}
+}
+
 const manifest = {
 	id: "community.iptvOrg",
 	version: package.version,
@@ -24,7 +29,17 @@ const manifest = {
 		  options: Object.keys(countries),
 		  isRequired: true
 		}
-	  ]}],
+	  ]},{
+		type: 'tv',
+		id: 'iptvorg_search',
+		name: 'search',
+		extra: [
+			{
+				  name: 'search',
+				  isRequired: true
+			}
+		  ]
+	  }],
 	resources: ["catalog", "meta", "stream"],
 	types: ['tv'],
 	name: "IPTVorg",
@@ -36,9 +51,68 @@ function match(r,s,i){
 	return (m && m.length>i)?m[i]:''
 }
 
+function getSearch(){
+	return new Promise((resolve, reject) => {
+		const now = Math.round(Date.now()/1000);
+		if(search_cache.timestamp<now-cache.maxAge){
+			request('https://iptv-org.github.io/iptv/index.m3u', function (error, response, body) {
+				if(error){
+					reject(error);
+				}else if (!response || response.statusCode!=200 ){
+					reject(response.statusCode);
+				}else if (body){
+					search_cache.timestamp = Math.round(Date.now()/1000);
+					search_cache.data = m3uToMeta(body);
+					resolve(search_cache.data);
+				}
+			});
+		}else{
+			resolve(search_cache.data);
+		}
+
+	});
+}
+
+function m3uToMeta(data,country){
+	if(country==undefined) country='search';
+	var channels = data.split('#');
+	var metas = [];
+	var metaID = {};
+	for (let i = 1; i < channels.length; i++) {
+		const item = channels[i];
+		var name = match(/,([^\n]+)/,item,1).trim();
+		if(!name) continue;
+		var img = match(/tvg-logo="([^"]+)"/,item,1);
+		var stream = match(/\n(http[^\n]+)/,item,1).trim();
+		var id ='iptvorg:'+country+'::'+name;
+		if(metaID[id]==undefined){
+			metaID[id] = metas.length;
+			metas.push({
+				id:id,
+				name:name,
+				logo:img,
+				poster:img,
+				posterShape: 'regular',
+				type:'tv',
+				streams:[]
+			});
+			metas[metaID[id]] = metas[metaID[id]]
+		}
+		const pathdata = stream.split('/');
+		metas[metaID[id]].streams.push({
+			title: pathdata[2]+'/'+pathdata[pathdata.length-1].replace(/\.m3u8$/,''),
+			url: stream
+		});
+	}
+	return metas;
+}
+
 const builder = new addonBuilder(manifest)
 function getData(country){
 	if(!country) country='United States';
+	if(country == 'search'){
+		return getSearch();
+	}
 	return new Promise((resolve, reject) => {
 		var url = 'https://iptv-org.github.io/iptv/countries/'+countries[country]+'.m3u';
 		if (countries[country]=='unsorted'){
@@ -50,38 +124,8 @@ function getData(country){
 			}else if (!response || response.statusCode!=200 ){
 				reject(response.statusCode);
 			}else if (body){
-				var channels = body.split('#');
-				var metas = [];
-				var metaID = {};
-				for (let i = 1; i < channels.length; i++) {
-					const item = channels[i];
-					var name = match(/,([^\n]+)/,item,1).trim();
-					if(!name) continue;
-					var img = match(/tvg-logo="([^"]+)"/,item,1);
-					var stream = match(/\n(http[^\n]+)/,item,1).trim();
-					var id ='iptvorg:'+country+'::'+name;
-					if(metaID[id]==undefined){
-						metaID[id] = metas.length;
-						metas.push({
-							id:id,
-							name:name,
-							logo:img,
-							poster:img,
-							posterShape: 'regular',
-							type:'tv',
-							streams:[]
-						});
-						metas[metaID[id]] = metas[metaID[id]]
-					}
-					const pathdata = stream.split('/');
-					metas[metaID[id]].streams.push({
-						title: pathdata[2]+'/'+pathdata[pathdata.length-1].replace(/\.m3u8$/,''),
-						url: stream
-					});
-				}
-				resolve(metas);
+				resolve(m3uToMeta(body,country));
 			}
-		
 		});
 	});
 }
@@ -91,15 +135,43 @@ function getData(country){
 builder.defineCatalogHandler(function(args, cb) {
 	// filter the dataset object and only take the requested type
 	return new Promise((resolve, reject) => {
-		getData(args.extra.genre).then(function(values) {
-			resolve({
-				metas:values,
-				cacheMaxAge: cache.maxAge,
-				staleError: cache.staleError
+		if (args.id == 'iptvorg_search'){
+			const search = args.extra.search.toLowerCase().split(/[^a-zA-Z0-9]/);
+			getSearch().then(function(values){
+				var found = [];
+				for (let i = 0; i < values.length; i++) {
+					const meta = values[i];
+					const name =  meta.name.toLowerCase().split(/[^a-zA-Z0-9]/);
+					var match = true;
+					for (let s = 0; s < search.length; s++) {
+						const word = search[s];
+						if(!name.includes(word)){
+							match = false;
+							break;
+						}
+					}
+					if(match){
+						found.push(meta);
+					}
+				}
+				resolve({
+					metas:found,
+					cacheMaxAge: cache.maxAge,
+					staleError: cache.staleError
+				});
 			});
-		}).catch((e)=>{
-			reject(e);
-		});
+		}else{
+			getData(args.extra.genre).then(function(values) {
+				resolve({
+					metas:values,
+					cacheMaxAge: cache.maxAge,
+					staleError: cache.staleError
+				});
+			}).catch((e)=>{
+				reject(e);
+			});
+		}
+
 	});
 });
 
