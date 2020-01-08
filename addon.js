@@ -73,8 +73,9 @@ function getData(country){
 						});
 						metas[metaID[id]] = metas[metaID[id]]
 					}
+					const pathdata = stream.split('/');
 					metas[metaID[id]].streams.push({
-						title: stream.split('/')[2],
+						title: pathdata[2]+'/'+pathdata[pathdata.length-1].replace(/\.m3u8$/,''),
 						url: stream
 					});
 				}
