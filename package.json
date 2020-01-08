@@ -2,15 +2,14 @@
 	"name": "stremio-addon-ptiptv",
 	"version": "0.0.4",
 	"description": "Collection of 8000+ publicly available IPTV channels from all over the world.",
-	"engines": { 
-		"node": "12.x" 
+	"engines": {
+		"node": "12.x"
 	},
 	"scripts": {
 		"start": "node server.js"
 	},
 	"dependencies": {
-		"m3u-parser": "^1.0.3",
 		"request": "^2.88.0",
-		"stremio-addon-sdk": "^1.1.4"
+		"stremio-addon-sdk": "^1.6.1"
 	}
 }
